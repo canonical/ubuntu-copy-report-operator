@@ -14,7 +14,7 @@ charset-normalizer==3.4.7
     # via requests
 coverage==7.14.1
     # via ubuntu-copy-report-operator (pyproject.toml)
-idna==3.17
+idna==3.18
     # via requests
 iniconfig==2.3.0
     # via pytest
@@ -37,7 +37,7 @@ pluggy==1.6.0
     # via pytest
 pydantic==2.13.4
     # via ubuntu-copy-report-operator (pyproject.toml)
-pydantic-core==2.46.4
+pydantic-core==2.47.0
     # via pydantic
 pygments==2.20.0
     # via pytest
