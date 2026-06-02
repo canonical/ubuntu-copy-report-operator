@@ -1,0 +1,18 @@
+[Unit]
+Description=Ubuntu Copy Report - Archive copy report job
+
+[Service]
+Type=oneshot
+Environment="LP_CREDENTIALS_FILE=/home/ubuntu/.config/lp-ubuntu-copy-report-bot.oauth"
+
+User=ubuntu
+KeyringMode=private
+NoNewPrivileges=true
+PrivateTmp=yes
+ProtectClock=yes
+ProtectHostname=yes
+ProtectKernelModules=yes
+ProtectKernelTunables=yes
+RestrictSUIDSGID=yes
+
+ExecStart=run-copy-report

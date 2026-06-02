@@ -1,0 +1,43 @@
+name: ubuntu-copy-report
+type: charm
+title: Ubuntu Copy Report charm
+summary: Run copy-report --copy-safe every hour
+description: |
+  **Ubuntu Copy Report Operator** is a [charm](https://juju.is/charms-architecture)
+  that runs the Ubuntu archive copy-report job hourly with --copy-safe.
+
+links:
+  website:
+    - https://charmhub.io/ubuntu-copy-report
+  issues:
+    - https://github.com/canonical/ubuntu-copy-report-operator/issues
+  source:
+    - https://github.com/canonical/ubuntu-copy-report-operator
+
+base: ubuntu@24.04
+platforms:
+  amd64:
+
+parts:
+  ubuntu-copy-report-charm:
+    source: .
+    plugin: uv
+    build-packages: [git]
+    build-snaps: [astral-uv]
+    override-build: |
+      craftctl default  # Run the default build steps.
+      git describe --always > $CRAFT_PART_INSTALL/version
+
+actions:
+  copy-now:
+    description: |
+      Trigger an immediate run of the copy-report service.
+
+config:
+  options:
+    lpuser_secret_id:
+      description: |
+        The secret ID for a vault containing the Launchpad oauth token
+        under key lpoauthkey, to be used for services that need
+        authenticated users.
+      type: secret
