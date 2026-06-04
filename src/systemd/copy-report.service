@@ -15,4 +15,5 @@ ProtectKernelModules=yes
 ProtectKernelTunables=yes
 RestrictSUIDSGID=yes
 
+ExecStartPre=syncmirror-copy-report
 ExecStart=run-copy-report

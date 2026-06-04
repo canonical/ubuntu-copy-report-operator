@@ -7,6 +7,7 @@ import logging
 import os
 import shutil
 from pathlib import Path
+from urllib.parse import urlparse
 
 from charmlibs import apt, pathops, systemd
 from charmlibs.apt import PackageError, PackageNotFoundError
@@ -18,10 +19,12 @@ PACKAGES = [
     "python3-launchpadlib",
     "python3-requests",
     "dpkg-dev",
+    "rsync",
 ]
 
 COPY_REPORT_SERVICE = "copy-report"
 COPY_REPORT_RUNNER_PATH = Path("/usr/bin/run-copy-report")
+COPY_REPORT_SYNCMIRROR_PATH = Path("/usr/bin/syncmirror-copy-report")
 LP_OAUTH_KEY_PATH = "/home/ubuntu/.config/lp-ubuntu-copy-report-bot.oauth"
 
 
@@ -37,7 +40,11 @@ class CopyReport:
         if juju_http_proxy:
             logger.debug("Setting HTTP_PROXY env to %s", juju_http_proxy)
             self.env["HTTP_PROXY"] = juju_http_proxy
+            rsync_proxy = urlparse(juju_http_proxy).netloc
+            logger.debug("Setting RSYNC_PROXY env to %s", rsync_proxy)
+            self.env["RSYNC_PROXY"] = rsync_proxy
             self.proxies["http"] = juju_http_proxy
+            self.proxies["rsync"] = rsync_proxy
         if juju_https_proxy:
             logger.debug("Setting HTTPS_PROXY env to %s", juju_https_proxy)
             self.env["HTTPS_PROXY"] = juju_https_proxy
@@ -65,8 +72,14 @@ class CopyReport:
 
         shutil.copy("src/script/copy-report", "/usr/bin/copy-report")
         shutil.copy("src/script/run-copy-report", COPY_REPORT_RUNNER_PATH)
+        shutil.copy("src/script/syncmirror-copy-report", COPY_REPORT_SYNCMIRROR_PATH)
         os.chmod("/usr/bin/copy-report", 0o755)
         os.chmod(COPY_REPORT_RUNNER_PATH, 0o755)
+        os.chmod(COPY_REPORT_SYNCMIRROR_PATH, 0o755)
+
+        mirror_dir = Path("/srv/mirrors/ubuntu")
+        mirror_dir.mkdir(parents=True, exist_ok=True)
+        shutil.chown(mirror_dir, user="ubuntu", group="ubuntu")
 
     def start(self):
         """Trigger copy-report asynchronously once."""
@@ -162,6 +175,8 @@ class CopyReport:
             proxy_env_vars += "\nEnvironment=HTTP_PROXY=" + self.proxies["http"]
         if "https" in self.proxies:
             proxy_env_vars += "\nEnvironment=HTTPS_PROXY=" + self.proxies["https"]
+        if "rsync" in self.proxies:
+            proxy_env_vars += "\nEnvironment=RSYNC_PROXY=" + self.proxies["rsync"]
 
         service_content += proxy_env_vars
         (systemd_unit_location / f"{COPY_REPORT_SERVICE}.service").write_text(

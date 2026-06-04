@@ -1,0 +1,100 @@
+#!/usr/bin/python3
+
+"""Sync security/updates source indices required by copy-report."""
+
+from __future__ import annotations
+
+import os
+import subprocess
+import sys
+from pathlib import Path
+
+from launchpadlib.launchpad import Launchpad
+
+MIRROR_ROOT = Path("/srv/mirrors/ubuntu")
+DISTS_ROOT = MIRROR_ROOT / "dists"
+UBUNTU_RSYNC_DISTS = "rsync://rsync.archive.ubuntu.com/ubuntu/dists"
+SERIES_STATUSES = {"Supported", "Current Stable Release"}
+
+
+def get_series_from_launchpad() -> list[str]:
+    """Return supported/current Ubuntu series names from Launchpad."""
+    launchpad = Launchpad.login_anonymously(
+        "copy-report-syncmirror", "production", version="devel"
+    )
+    distro = launchpad.distributions["ubuntu"]
+    return sorted(
+        [series.name for series in distro.series if series.status in SERIES_STATUSES]
+    )
+
+
+def get_series_from_local_mirror() -> list[str]:
+    """Fallback: derive series already present in local mirror dists."""
+    if not DISTS_ROOT.exists():
+        return []
+
+    security = set()
+    updates = set()
+    for entry in DISTS_ROOT.iterdir():
+        name = entry.name
+        if name.endswith("-security"):
+            security.add(name.removesuffix("-security"))
+        elif name.endswith("-updates"):
+            updates.add(name.removesuffix("-updates"))
+
+    return sorted(security & updates)
+
+
+def discover_series() -> list[str]:
+    """Discover target series, preferring Launchpad and falling back locally."""
+    try:
+        return get_series_from_launchpad()
+    except Exception as exc:  # pragma: no cover - defensive fallback
+        print(f"Warning: failed to query Launchpad series ({exc})", file=sys.stderr)
+
+    local_series = get_series_from_local_mirror()
+    if local_series:
+        return local_series
+
+    raise RuntimeError("Unable to discover any Ubuntu series to sync")
+
+
+def sync_suite(suite: str) -> None:
+    """Sync only files required by copy-report from a specific suite."""
+    destination = DISTS_ROOT / suite
+    destination.mkdir(parents=True, exist_ok=True)
+
+    command = [
+        "rsync",
+        "-avz",
+        "--delete",
+        "--prune-empty-dirs",
+        "--include=*/",
+        "--include=InRelease",
+        "--include=Release",
+        "--include=source/",
+        "--include=source/Sources.xz",
+        "--include=source/Sources.bz2",
+        "--exclude=*",
+        f"{UBUNTU_RSYNC_DISTS}/{suite}/",
+        str(destination) + "/",
+    ]
+    subprocess.run(command, check=True)
+
+
+def main() -> int:
+    """Sync source metadata for all required series pockets."""
+    os.umask(0o022)
+    series_names = discover_series()
+
+    for series in series_names:
+        for pocket in ("security", "updates"):
+            suite = f"{series}-{pocket}"
+            print(f"Syncing {suite}")
+            sync_suite(suite)
+
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

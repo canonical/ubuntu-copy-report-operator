@@ -35,12 +35,19 @@ def test_install_copies_scripts(monkeypatch):
     monkeypatch.setattr(
         copy_report.os, "chmod", lambda path, mode: ops.append(("chmod", str(path)))
     )
+    monkeypatch.setattr(copy_report.Path, "mkdir", lambda self, parents=True, exist_ok=True: None)
+    monkeypatch.setattr(copy_report.shutil, "chown", lambda path, user, group: None)
 
     worker = CopyReport()
     worker.install()
 
     assert ("copy", "src/script/copy-report", "/usr/bin/copy-report") in ops
     assert ("copy", "src/script/run-copy-report", copy_report.COPY_REPORT_RUNNER_PATH) in ops
+    assert (
+        "copy",
+        "src/script/syncmirror-copy-report",
+        copy_report.COPY_REPORT_SYNCMIRROR_PATH,
+    ) in ops
 
 
 def test_start_starts_copy_report_service(monkeypatch):
@@ -102,6 +109,7 @@ def test_setup_systemd_unit_writes_service_and_timer_with_proxy_environment(monk
     assert svc_path in written
     assert "Environment=HTTP_PROXY=http://proxy.example:8080" in written[svc_path]
     assert "Environment=HTTPS_PROXY=https://secure.example:8443" in written[svc_path]
+    assert "Environment=RSYNC_PROXY=proxy.example:8080" in written[svc_path]
 
 
 def test_configure_schedule_writes_timer_and_reloads_systemd(monkeypatch):
