@@ -89,7 +89,10 @@ class UbuntuCopyReportCharm(ops.CharmBase):
         lp_key_data = self._lpuser_lp_oauthkey
         if lp_key_data is None:
             logger.warning("Launchpad credentials unavailable, unable to run copy-report.")
-            self._copy_report.disable_schedule()
+            try:
+                self._copy_report.disable_schedule()
+            except CalledProcessError as e:
+                logger.warning("Failed to disable copy-report schedule: %s", e)
             self.unit.status = ops.BlockedStatus("Launchpad oauth token config missing.")
             return
 
@@ -101,7 +104,8 @@ class UbuntuCopyReportCharm(ops.CharmBase):
             self._copy_report.configure_schedule()
             self._copy_report.enable_schedule()
             self._copy_report.start()
-        except CalledProcessError:
+        except (CalledProcessError, OSError) as e:
+            logger.warning("Failed to start services: %s", e)
             self.unit.status = ops.BlockedStatus(
                 "Failed to start services. Check `juju debug-log` for details."
             )
@@ -116,24 +120,27 @@ class UbuntuCopyReportCharm(ops.CharmBase):
         lp_key_data = self._lpuser_lp_oauthkey
         if lp_key_data is None:
             logger.warning("Launchpad credentials unavailable, unable to run copy-report.")
-            self._copy_report.disable_schedule()
+            try:
+                self._copy_report.disable_schedule()
+            except CalledProcessError as e:
+                logger.warning("Failed to disable copy-report schedule: %s", e)
             self.unit.status = ops.BlockedStatus("Launchpad oauth token config missing.")
-            return False
-        else:
-            logger.debug("config - got lpoauthkey (length %d)", len(lp_key_data))
-            if not self._copy_report.configure_lpoauthkey(lp_key_data):
-                self.unit.status = ops.BlockedStatus("Failed to update Launchpad oauth token.")
-                return False
+            return
+        logger.debug("config - got lpoauthkey (length %d)", len(lp_key_data))
+        if not self._copy_report.configure_lpoauthkey(lp_key_data):
+            self.unit.status = ops.BlockedStatus("Failed to update Launchpad oauth token.")
+            return
         logger.debug("config change done - lp oauth key set")
 
         try:
             self._copy_report.configure_schedule()
             self._copy_report.enable_schedule()
-        except IOError:
+        except (CalledProcessError, OSError) as e:
+            logger.warning("Failed to write copy-report configuration: %s", e)
             self.unit.status = ops.BlockedStatus(
                 "Failed to write copy-report configuration. Check `juju debug-log` for details."
             )
-            return False
+            return
 
         self.unit.status = ops.ActiveStatus()
 

@@ -63,20 +63,22 @@ def sync_suite(suite: str) -> None:
     """Sync only files required by copy-report from a specific suite."""
     destination = DISTS_ROOT / suite
     destination.mkdir(parents=True, exist_ok=True)
+    source = f"{UBUNTU_RSYNC_DISTS}/{suite}/"
+
+    print(f"Rsyncing {source} -> {destination}/", flush=True)
 
     command = [
         "rsync",
         "-avz",
         "--delete",
         "--prune-empty-dirs",
+        "--itemize-changes",
         "--include=*/",
-        "--include=InRelease",
-        "--include=Release",
         "--include=source/",
         "--include=source/Sources.xz",
         "--include=source/Sources.bz2",
         "--exclude=*",
-        f"{UBUNTU_RSYNC_DISTS}/{suite}/",
+        source,
         str(destination) + "/",
     ]
     subprocess.run(command, check=True)
@@ -90,7 +92,6 @@ def main() -> int:
     for series in series_names:
         for pocket in ("security", "updates"):
             suite = f"{series}-{pocket}"
-            print(f"Syncing {suite}")
             sync_suite(suite)
 
     return 0

@@ -115,31 +115,22 @@ class CopyReport:
                 "Failed to create lp credentials entry due to permission issues: %s",
                 str(e),
             )
-        logger.debug(
-            "configure_lpoauthkey: written lp oauth key (length %d) to %s",
-            len(lp_key_data),
-            lp_key_file,
-        )
+        if key_success:
+            logger.debug(
+                "configure_lpoauthkey: written lp oauth key (length %d) to %s",
+                len(lp_key_data),
+                lp_key_file,
+            )
         return key_success
 
     def configure_schedule(self):
         """Write an hourly timer unit."""
-        timer_lines = [
-            "[Unit]",
-            "Description=Ubuntu Copy Report - Scheduled runs",
-            "",
-            "[Timer]",
-            "OnCalendar=hourly",
-            "Persistent=true",
-            "RandomizedDelaySec=60",
-            "",
-            "[Install]",
-            "WantedBy=timers.target",
-            "",
-        ]
+        timer_content = Path(f"src/systemd/{COPY_REPORT_SERVICE}.timer").read_text(
+            encoding="utf-8"
+        )
 
         timer_path = Path(f"/etc/systemd/system/{COPY_REPORT_SERVICE}.timer")
-        timer_path.write_text("\n".join(timer_lines), encoding="utf-8")
+        timer_path.write_text(timer_content, encoding="utf-8")
         systemd.daemon_reload()
 
     def enable_schedule(self):
@@ -185,6 +176,7 @@ class CopyReport:
         (systemd_unit_location / f"{COPY_REPORT_SERVICE}.timer").write_text(
             timer_content, encoding="utf-8"
         )
+        systemd.daemon_reload()
 
     def setup_systemd_units(self):
         """Set up the copy-report service and timer."""

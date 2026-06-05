@@ -1,6 +1,6 @@
 # Contributing
 
-This documents explains the processes and practices recommended for contributing enhancements to
+This document explains the processes and practices recommended for contributing enhancements to
 this operator.
 
 - Generally, before developing enhancements to this charm, you should consider [opening an issue
