@@ -26,8 +26,7 @@ re_strip_revision = re.compile(r"-[^-]+$")
 re_changelog_versions = re.compile(r"^\w[-+0-9a-z.]+ \(([^\(\) \t]+)\)")
 
 default_mirrors = ":".join([
-    '/home/ubuntu-archive/mirror/ubuntu',
-    '/srv/archive.ubuntu.com/ubuntu',
+    '/srv/mirrors/ubuntu',
 ])
 tempdir = None
 
