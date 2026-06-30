@@ -24,7 +24,7 @@ opentelemetry-api==1.43.0
     # via
     #   charmlibs-apt
     #   ops
-ops==3.7.1
+ops==3.8.0
     # via
     #   ubuntu-copy-report-operator (pyproject.toml)
     #   charmlibs-pathops
