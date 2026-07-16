@@ -12,7 +12,7 @@ charmlibs-systemd==1.0.0.post0
     # via ubuntu-copy-report-operator (pyproject.toml)
 charset-normalizer==3.4.9
     # via requests
-coverage==7.15.1
+coverage==7.15.2
     # via ubuntu-copy-report-operator (pyproject.toml)
 idna==3.18
     # via requests
