@@ -29,7 +29,7 @@ ops==3.8.0
     #   ubuntu-copy-report-operator (pyproject.toml)
     #   charmlibs-pathops
     #   ops-scenario
-ops-scenario==8.8.0
+ops-scenario==8.8.1
     # via ops
 packaging==26.2
     # via pytest
