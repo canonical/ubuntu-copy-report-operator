@@ -18,7 +18,7 @@ ops==3.8.0
     #   charmlibs-pathops
 pydantic==2.13.4
     # via ubuntu-copy-report-operator (pyproject.toml)
-pydantic-core==2.47.0
+pydantic-core==2.48.0
     # via pydantic
 pyyaml==6.0.3
     # via ops
